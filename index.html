@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F5F0">
+  <title>Menüplaner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===================== Login ===================== -->
+  <section id="view-login" class="login hidden">
+    <div class="login-card">
+      <h1 class="brand">Menüplaner</h1>
+      <p class="login-hint">Anmeldung mit dem Familien-Passwort</p>
+      <label class="field">
+        <span>E-Mail</span>
+        <input id="login-email" type="email" autocomplete="username" inputmode="email">
+      </label>
+      <label class="field">
+        <span>Passwort</span>
+        <input id="login-password" type="password" autocomplete="current-password">
+      </label>
+      <p id="login-error" class="error hidden"></p>
+      <button id="login-btn" class="btn primary wide">Anmelden</button>
+    </div>
+  </section>
+
+  <!-- ===================== App ===================== -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <span class="brand small">Menüplaner</span>
+      <span id="topbar-context" class="topbar-context"></span>
+    </header>
+
+    <main id="main">
+
+      <!-- Wochenplan -->
+      <section id="view-plan" class="view">
+        <div class="weeknav">
+          <button class="btn icon" id="plan-prev" aria-label="Vorherige Woche">‹</button>
+          <button class="btn ghost" id="plan-today">Heute</button>
+          <div class="weeknav-label" id="plan-week-label"></div>
+          <button class="btn icon" id="plan-next" aria-label="Nächste Woche">›</button>
+        </div>
+        <div class="week-mix" id="plan-mix" aria-label="Typ-Mix der Woche"></div>
+        <button class="btn secondary wide" id="plan-autofill">✦ Leere Slots automatisch füllen</button>
+        <div id="plan-days"></div>
+      </section>
+
+      <!-- Rezepte -->
+      <section id="view-recipes" class="view hidden">
+        <div class="toolbar">
+          <input id="recipe-search" class="search" type="search" placeholder="Rezept suchen …">
+          <button class="btn primary" id="recipe-new">+ Neu</button>
+        </div>
+        <div class="chips" id="recipe-filters">
+          <button class="chip" data-filter-typ="fleisch"><i class="dot fleisch"></i>Fleisch</button>
+          <button class="chip" data-filter-typ="vegi"><i class="dot vegi"></i>Vegi</button>
+          <button class="chip" data-filter-typ="fisch"><i class="dot fisch"></i>Fisch</button>
+          <button class="chip" id="filter-fav">★ Favoriten</button>
+        </div>
+        <div class="chips" id="recipe-tagchips"></div>
+        <div id="recipe-list"></div>
+      </section>
+
+      <!-- Einkaufsliste -->
+      <section id="view-shopping" class="view hidden">
+        <div class="weeknav">
+          <button class="btn icon" id="shop-prev" aria-label="Vorherige Woche">‹</button>
+          <button class="btn ghost" id="shop-today">Heute</button>
+          <div class="weeknav-label" id="shop-week-label"></div>
+          <button class="btn icon" id="shop-next" aria-label="Nächste Woche">›</button>
+        </div>
+        <div id="shop-progress" class="shop-progress"></div>
+        <div id="shop-list"></div>
+      </section>
+
+      <!-- Historie -->
+      <section id="view-history" class="view hidden">
+        <div id="history-list"></div>
+      </section>
+
+      <!-- Einstellungen -->
+      <section id="view-settings" class="view hidden">
+        <h2>Einstellungen</h2>
+        <label class="field">
+          <span>Wiederholungssperre (Wochen)</span>
+          <input id="set-sperre" type="number" min="0" max="52" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span>Standard-Personenzahl</span>
+          <input id="set-personen" type="number" min="1" max="20" inputmode="numeric">
+        </label>
+        <button class="btn primary wide" id="settings-save">Einstellungen speichern</button>
+        <hr class="sep">
+        <p class="muted">Das Familien-Passwort kann im Supabase-Dashboard geändert werden
+          (Authentication → Users → Benutzer wählen → «Reset password»).</p>
+        <button class="btn danger wide" id="logout-btn">Abmelden</button>
+      </section>
+
+    </main>
+
+    <nav class="tabbar">
+      <button class="tab active" data-view="plan"><span class="tab-ico">▦</span>Woche</button>
+      <button class="tab" data-view="recipes"><span class="tab-ico">✎</span>Rezepte</button>
+      <button class="tab" data-view="shopping"><span class="tab-ico">✓</span>Einkauf</button>
+      <button class="tab" data-view="history"><span class="tab-ico">⌛</span>Historie</button>
+      <button class="tab" data-view="settings"><span class="tab-ico">⚙</span>Mehr</button>
+    </nav>
+  </div>
+
+  <!-- ===================== Rezept-Auswahl (Picker) ===================== -->
+  <div id="picker" class="modal hidden" role="dialog" aria-modal="true" aria-label="Rezept wählen">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="picker-title">Rezept wählen</h3>
+        <button class="btn icon" data-close="picker" aria-label="Schliessen">✕</button>
+      </div>
+      <input id="picker-search" class="search" type="search" placeholder="Suchen …">
+      <div class="chips" id="picker-filters">
+        <button class="chip" data-picker-typ="fleisch"><i class="dot fleisch"></i>Fleisch</button>
+        <button class="chip" data-picker-typ="vegi"><i class="dot vegi"></i>Vegi</button>
+        <button class="chip" data-picker-typ="fisch"><i class="dot fisch"></i>Fisch</button>
+        <button class="chip" id="picker-fav">★</button>
+      </div>
+      <div id="picker-list" class="picker-list"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Rezept-Formular ===================== -->
+  <div id="editor" class="modal hidden" role="dialog" aria-modal="true" aria-label="Rezept bearbeiten">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="editor-title">Rezept</h3>
+        <button class="btn icon" data-close="editor" aria-label="Schliessen">✕</button>
+      </div>
+      <label class="field"><span>Name</span><input id="ed-name" type="text"></label>
+      <div class="field"><span>Typ</span>
+        <div class="segmented" id="ed-typ">
+          <button data-typ="fleisch"><i class="dot fleisch"></i>Fleisch</button>
+          <button data-typ="vegi"><i class="dot vegi"></i>Vegi</button>
+          <button data-typ="fisch"><i class="dot fisch"></i>Fisch</button>
+        </div>
+      </div>
+      <label class="field"><span>Tags (mit Komma trennen)</span><input id="ed-tags" type="text" placeholder="z.B. Pasta, Asiatisch"></label>
+      <label class="field"><span>Link zum Rezept (optional)</span><input id="ed-link" type="url" inputmode="url" placeholder="https://…"></label>
+      <div class="field-row">
+        <label class="field"><span>Basis-Portionen</span><input id="ed-portionen" type="number" min="1" max="20" inputmode="numeric" value="4"></label>
+        <label class="fav-toggle"><input id="ed-favorit" type="checkbox"><span>★ Favorit</span></label>
+      </div>
+      <div class="field"><span>Zutaten</span>
+        <div id="ed-ingredients"></div>
+        <button class="btn ghost" id="ed-add-ingredient">+ Zutat hinzufügen</button>
+      </div>
+      <p id="editor-error" class="error hidden"></p>
+      <button class="btn primary wide" id="ed-save">Speichern</button>
+      <button class="btn danger wide hidden" id="ed-delete">Rezept löschen</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

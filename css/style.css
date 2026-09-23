@@ -211,6 +211,7 @@ h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.01em; 
 /* ---------- Rezeptliste ---------- */
 .toolbar { display: flex; gap: 8px; }
 .toolbar .search { flex: 1; }
+.list-info { color: var(--muted); font-size: .85rem; padding: 6px 2px 2px; }
 .recipe-item {
   background: var(--card);
   border: 1px solid var(--line);
@@ -223,6 +224,13 @@ h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.01em; 
 .recipe-main { flex: 1; min-width: 0; }
 .recipe-name { font-weight: 600; display: flex; align-items: center; gap: 7px; }
 .recipe-meta { color: var(--muted); font-size: .82rem; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nolink-badge {
+  font-size: .68rem; font-weight: 600;
+  color: var(--fleisch);
+  background: color-mix(in srgb, var(--fleisch) 12%, transparent);
+  border-radius: 999px; padding: 2px 8px;
+  white-space: nowrap; flex: none;
+}
 .star {
   border: 0; background: none; cursor: pointer;
   font-size: 1.35rem; line-height: 1; color: var(--line); padding: 6px;

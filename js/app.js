@@ -18,7 +18,7 @@ const state = {
   lastCooked: new Map(),             // recipe_id -> ISO-Datum (letzte Vergangenheit)
   settings: { wiederholungssperre_wochen: 3, standard_personen: 4 },
   planEntries: [],                   // Einträge der angezeigten Woche
-  recipeFilter: { typ: null, fav: false, tag: null, q: '' },
+  recipeFilter: { typ: null, fav: false, tag: null, q: '', nolink: false },
   picker: { typ: null, fav: false, q: '', onSelect: null },
   editorId: null,                    // null = neues Rezept
   shoppingChannel: null,
@@ -27,6 +27,8 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Hat ein Rezept einen hinterlegten Rezept-Link?
+const hasLink = (r) => !!(r.rezept_link && String(r.rezept_link).trim());
 
 function toast(msg, ms = 3200) {
   const t = $('#toast');
@@ -179,6 +181,10 @@ $('#filter-fav').addEventListener('click', () => {
   state.recipeFilter.fav = !state.recipeFilter.fav;
   renderRecipeList();
 });
+$('#filter-nolink').addEventListener('click', () => {
+  state.recipeFilter.nolink = !state.recipeFilter.nolink;
+  renderRecipeList();
+});
 $('#recipe-search').addEventListener('input', (e) => {
   state.recipeFilter.q = e.target.value.trim().toLowerCase();
   renderRecipeList();
@@ -188,6 +194,7 @@ function filteredRecipes(f) {
   return state.recipes.filter((r) => {
     if (f.typ && r.typ !== f.typ) return false;
     if (f.fav && !r.favorit) return false;
+    if (f.nolink && hasLink(r)) return false; // nur Gerichte ohne Rezept-Link
     if (f.tag && !(r.tags || []).includes(f.tag)) return false;
     if (f.q && !r.name.toLowerCase().includes(f.q)) return false;
     return true;
@@ -199,6 +206,7 @@ function renderRecipeList() {
   // Chip-Zustände
   $$('#recipe-filters [data-filter-typ]').forEach((c) => c.classList.toggle('active', c.dataset.filterTyp === f.typ));
   $('#filter-fav').classList.toggle('active', f.fav);
+  $('#filter-nolink').classList.toggle('active', f.nolink);
 
   // Tag-Chips aus allen Rezepten
   const tags = [...new Set(state.recipes.flatMap((r) => r.tags || []))].sort((a, b) => a.localeCompare(b, 'de'));
@@ -216,10 +224,16 @@ function renderRecipeList() {
     return;
   }
   if (list.length === 0) {
-    box.innerHTML = `<div class="empty-note">Kein Rezept passt zu diesem Filter.</div>`;
+    const msg = f.nolink
+      ? 'Alle Gerichte haben einen Rezept-Link. 🎉'
+      : 'Kein Rezept passt zu diesem Filter.';
+    box.innerHTML = `<div class="empty-note">${msg}</div>`;
     return;
   }
-  box.innerHTML = list.map((r) => {
+  const info = f.nolink
+    ? `<div class="list-info">${list.length} Gericht(e) ohne Rezept-Link – zum Befüllen antippen.</div>`
+    : '';
+  box.innerHTML = info + list.map((r) => {
     const meta = [
       TYP_LABEL[r.typ],
       (r.tags || []).join(', '),
@@ -229,7 +243,9 @@ function renderRecipeList() {
     <div class="recipe-item" data-id="${r.id}">
       <div class="recipe-main">
         <div class="recipe-name">${dotHtml(r.typ)}<span>${esc(r.name)}</span>
-          ${r.rezept_link ? `<a href="${esc(r.rezept_link)}" target="_blank" rel="noopener" title="Rezept öffnen" data-stop>↗</a>` : ''}
+          ${hasLink(r)
+            ? `<a href="${esc(r.rezept_link)}" target="_blank" rel="noopener" title="Rezept öffnen" data-stop>↗</a>`
+            : `<span class="nolink-badge" title="Noch kein Rezept-Link">Rezept fehlt</span>`}
         </div>
         <div class="recipe-meta">${esc(meta)}</div>
       </div>

@@ -110,5 +110,18 @@ res = L.chooseSuggestion({
 });
 eq(res, null, 'kein Vorschlag möglich -> null');
 
+// Buffet-Einträge (recipe_id null) in der Historie sperren nichts und lockern nichts
+res = L.chooseSuggestion({
+  slotDatum: '2026-07-08',
+  rezepte: [{ id: 'r1', typ: 'vegi' }],
+  historie: [
+    { datum: '2026-07-06', recipe_id: null },
+    { datum: '2026-07-07', recipe_id: null },
+  ],
+  wochenBelegung: [],
+  sperrWochen: 3,
+});
+ok(res && res.recipe.id === 'r1' && res.gelockert === false, 'Buffet in der Historie beeinflusst die Sperre nicht');
+
 console.log(fails === 0 ? '\nAlle Tests bestanden.' : `\n${fails} Test(s) fehlgeschlagen.`);
 process.exit(fails === 0 ? 0 : 1);

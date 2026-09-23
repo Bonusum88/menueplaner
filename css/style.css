@@ -202,6 +202,7 @@ h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.01em; 
 }
 .slot-recipe a { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .slot-empty { color: var(--muted); flex: 1; }
+.buffet-ico { color: var(--muted); font-size: .95rem; line-height: 1; flex: none; }
 .slot-actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
 .slot-actions .btn { padding: 5px 10px; font-size: .85rem; }
 .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }

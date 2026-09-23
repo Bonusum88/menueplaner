@@ -154,6 +154,7 @@ async function refreshLastCooked() {
   const { data, error } = await sb
     .from('plan_entries')
     .select('recipe_id, datum')
+    .not('recipe_id', 'is', null) // Buffet-Einträge haben kein Rezept
     .lte('datum', today)
     .order('datum', { ascending: false })
     .limit(3000);
@@ -419,6 +420,21 @@ async function renderPlan() {
 function slotHtml(iso, mahlzeit) {
   const entry = state.planEntries.find((e) => e.datum === iso && e.mahlzeit === mahlzeit);
   const label = mahlzeit === 'mittag' ? 'Mittag' : 'Abend';
+  // Buffet = Resten-Essen: kein Rezept, keine Sperre, keine Einkäufe
+  if (entry && entry.buffet) {
+    return `
+    <div class="slot" data-datum="${iso}" data-mahlzeit="${mahlzeit}" data-entry="${entry.id}">
+      <div class="slot-head">
+        <span class="slot-label">${label}</span>
+        <span class="slot-recipe"><span class="buffet-ico" aria-hidden="true">♻</span><span class="rname">Buffet</span></span>
+      </div>
+      <div class="slot-actions">
+        <button class="btn" data-act="pick" aria-label="Rezept wählen">✎</button>
+        <button class="btn" data-act="suggest" aria-label="Vorschlag statt Buffet">✦</button>
+        <button class="btn" data-act="remove" aria-label="Slot leeren">✕</button>
+      </div>
+    </div>`;
+  }
   if (!entry || !entry.recipe) {
     return `
     <div class="slot" data-datum="${iso}" data-mahlzeit="${mahlzeit}">
@@ -429,6 +445,7 @@ function slotHtml(iso, mahlzeit) {
       <div class="slot-actions">
         <button class="btn" data-act="pick">＋ Wählen</button>
         <button class="btn" data-act="suggest">✦ Vorschlag</button>
+        <button class="btn" data-act="buffet">♻ Buffet</button>
       </div>
     </div>`;
   }
@@ -450,6 +467,7 @@ function slotHtml(iso, mahlzeit) {
       </span>
       <button class="btn" data-act="pick" aria-label="Rezept wechseln">✎</button>
       <button class="btn" data-act="suggest" aria-label="Neuer Vorschlag">✦</button>
+      <button class="btn" data-act="buffet" aria-label="Buffet (Resten)">♻</button>
       <button class="btn" data-act="remove" aria-label="Slot leeren">✕</button>
     </div>
   </div>`;
@@ -468,6 +486,7 @@ function bindSlotActions() {
         (recipe) => setSlot(datum, mahlzeit, recipe.id));
     }
     if (act === 'suggest') await suggestSlot(datum, mahlzeit);
+    if (act === 'buffet') await setBuffet(datum, mahlzeit);
     if (act === 'remove' && entryId) {
       await sb.from('plan_entries').delete().eq('id', entryId);
       renderPlan();
@@ -484,8 +503,17 @@ function bindSlotActions() {
 async function setSlot(datum, mahlzeit, recipeId, personen = null) {
   const p = personen ?? state.settings.standard_personen;
   const { error } = await sb.from('plan_entries')
-    .upsert({ datum, mahlzeit, recipe_id: recipeId, personen: p }, { onConflict: 'datum,mahlzeit' });
+    .upsert({ datum, mahlzeit, recipe_id: recipeId, personen: p, buffet: false }, { onConflict: 'datum,mahlzeit' });
   if (error) { toast('Slot konnte nicht gespeichert werden.'); return; }
+  renderPlan();
+}
+
+/** Slot als Buffet (Resten-Essen) markieren – jederzeit erlaubt, beliebig oft. */
+async function setBuffet(datum, mahlzeit) {
+  const { error } = await sb.from('plan_entries')
+    .upsert({ datum, mahlzeit, recipe_id: null, buffet: true, personen: state.settings.standard_personen },
+      { onConflict: 'datum,mahlzeit' });
+  if (error) { toast('Buffet konnte nicht gespeichert werden.'); return; }
   renderPlan();
 }
 
@@ -667,7 +695,7 @@ async function renderHistory() {
   const mon = getMonday(new Date());
   const { data, error } = await sb
     .from('plan_entries')
-    .select('datum, mahlzeit, personen, recipe:recipes(name, typ)')
+    .select('datum, mahlzeit, personen, buffet, recipe:recipes(name, typ)')
     .lt('datum', toISODate(mon))
     .order('datum', { ascending: false })
     .limit(500);
@@ -692,7 +720,9 @@ async function renderHistory() {
       const idx = d.getDay() === 0 ? 6 : d.getDay() - 1;
       return `<div class="hist-row">
         <span class="hd">${WOCHENTAGE_KURZ[idx]} ${fmtShort(d)} ${e.mahlzeit === 'mittag' ? 'Mittag' : 'Abend'}</span>
-        ${e.recipe ? dotHtml(e.recipe.typ) : ''}<span>${esc(e.recipe?.name || '(gelöschtes Rezept)')}</span>
+        ${e.buffet
+          ? `<span class="buffet-ico" aria-hidden="true">♻</span><span>Buffet</span>`
+          : `${e.recipe ? dotHtml(e.recipe.typ) : ''}<span>${esc(e.recipe?.name || '(gelöschtes Rezept)')}</span>`}
       </div>`;
     }).join('');
     return `<div class="hist-week"><h3>Woche ${weekLabel(monD)}</h3>${rows}</div>`;

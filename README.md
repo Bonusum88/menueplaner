@@ -61,8 +61,9 @@ Projekt-Referenz: `dbyxdxuegtjqdztwzjva`
 | id | uuid | PK |
 | datum | date | Pflicht |
 | mahlzeit | mahlzeit_typ | Pflicht; `unique(datum, mahlzeit)` |
-| recipe_id | uuid | FK → recipes.id, `on delete cascade` |
+| recipe_id | uuid | FK → recipes.id, `on delete cascade`; `null` bei Buffet |
 | personen | integer | default 4, > 0 |
+| buffet | boolean | default false; Resten-Essen ohne Rezept. Check: `buffet` ⇔ `recipe_id is null` |
 | created_at | timestamptz | default now() |
 
 **shopping_state** – Abhak-Status der Einkaufsliste (Liste selbst wird berechnet)
@@ -103,6 +104,10 @@ as x(name, menge, einheit);
   geprüft), kein Rezept doppelt in derselben Woche, ausgewogener Typ-Mix (der in der
   Woche am wenigsten vertretene Typ wird bevorzugt). Reicht der Rezeptpool nicht,
   wird die Sperre schrittweise gelockert und ein Hinweis angezeigt.
+- **Buffet (Resten):** Jeder Slot kann jederzeit und beliebig oft als «♻ Buffet»
+  markiert werden. Buffet hat kein Rezept, unterliegt keiner Wiederholungssperre,
+  zählt nicht zum Typ-Mix, erzeugt keine Einkäufe und wird vom Auto-Füllen nie
+  gesetzt oder überschrieben.
 
 ## Verwaltung
 
